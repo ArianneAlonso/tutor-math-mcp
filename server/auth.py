@@ -9,7 +9,7 @@ from typing import Optional
 from uuid import UUID
 from models import User
 
-SECRET_KEY = os.getenv("SECRET_KEY", "un_secret_muy_seguro_para_desarrollo")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

@@ -81,21 +81,8 @@ export const Chat = ({
 
       <div className="p-4 bg-slate-100">
         <div className="max-w-3xl mx-auto">
-          <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200">
-              <button className="p-1 text-slate-500 hover:text-slate-800">
-                <Plus className="w-4 h-4" />
-              </button>
-              <button className="p-1 text-slate-500 hover:text-slate-800">
-                <MessageSquare className="w-4 h-4" />
-              </button>
-              <button className="p-1 text-slate-500 hover:text-slate-800">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            </div>
+          <div className="relative bg-blue-100 rounded-xl border border-slate-200 shadow-sm h-[70px]">
+           
 
         <textarea
   value={inputMessage}
@@ -118,7 +105,7 @@ export const Chat = ({
 
               <button
                 onClick={handleSubmit}
-                className="p-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-[-100px]"
                 disabled={!inputMessage.trim()}
               >
                 <Send className="w-4 h-4" />

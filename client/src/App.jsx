@@ -3,6 +3,7 @@ import { Chat } from './components/chat';
 import { Historial } from './components/historial';
 import { Pizarra } from './components/pizarra';
 import { Sidebar } from './components/sidebar';
+import { VerDibujo } from './components/chatPreview';
 import LoginRegister from './components/loginregister';
 
 export const App = () => {
@@ -16,14 +17,30 @@ export const App = () => {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
-  const [pizarraWidth, setPizarraWidth] = useState(50); // porcentaje inicial
+  const [pizarraWidth, setPizarraWidth] = useState(50);
   const [isResizing, setIsResizing] = useState(false);
+  const [chatsMensajes, setChatsMensajes] = useState([]);
+  const [chatsDibujos, setChatsDibujos] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedDibujo, setSelectedDibujo] = useState(null);
 
 
   useEffect(() => {
     const token = localStorage.getItem('user_token');
     if (token) fetchUserData(token);
   }, []);
+
+  const guardarChatDeMensajes = () => {
+    if (messages.length === 0) return;
+
+    const nuevoChat = {
+      id: Date.now(),
+      contenido: [...messages],
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    setChatsMensajes(prev => [...prev, nuevoChat]);
+  };
 
   const fetchUserData = async (token) => {
     try {
@@ -52,10 +69,11 @@ export const App = () => {
       if (!response.ok) throw new Error();
       const data = await response.json();
       setConversations(data);
-    } catch {}
+    } catch { }
   };
 
   const handleNewChat = () => {
+    guardarChatDeMensajes();
     setMessages([]);
     setShowPizarra(false);
     setCurrentConversationId(null);
@@ -178,9 +196,15 @@ export const App = () => {
   };
 
   const handleAnalyzeAndSaveDrawing = (drawingData) => {
-    const newDrawing = { id: Date.now(), data: drawingData, timestamp: new Date().toLocaleTimeString() };
-    setDrawings(prev => [...prev, newDrawing]);
+    const newDrawing = {
+      id: Date.now(),
+      image: drawingData,
+      timestamp: new Date().toLocaleTimeString()
+    };
+
+    setChatsDibujos(prev => [...prev, newDrawing]);
   };
+
 
   const startResize = () => {
     setIsResizing(true);
@@ -189,10 +213,10 @@ export const App = () => {
   const doResize = (e) => {
     if (!isResizing) return;
 
-    
+
     const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
 
-    setPizarraWidth(Math.min(80, Math.max(20, newWidth))); 
+    setPizarraWidth(Math.min(80, Math.max(20, newWidth)));
   };
 
   const stopResize = () => {
@@ -224,6 +248,11 @@ export const App = () => {
             onShowHistorial={toggleHistorial}
             showPizarra={showPizarra}
             conversations={conversations}
+            chatsMensajes={chatsMensajes}     
+            onOpenChat={(chat) => {           
+              setMessages(chat.contenido);
+              setShowHistorial(false);
+            }}
             onSelectConversation={handleSelectConversation}
             onLogout={handleLogout}
             currentUser={currentUser}
@@ -261,12 +290,20 @@ export const App = () => {
 
           {showHistorial && (
             <Historial
-              messages={messages}
-              drawings={drawings}
-              onClearHistory={handleClearHistory}
-              onClose={toggleHistorial}
+              chatsMensajes={chatsMensajes}
+              chatsDibujos={chatsDibujos}
               sidebarOpen={sidebarOpen}
+              onClose={toggleHistorial}
+              onOpenChat={(chat) => {
+                setMessages(chat.contenido);   
+                setShowHistorial(false);       
+              }}
+              onOpenDibujo={(dibujo) => setSelectedDibujo(dibujo)}
             />
+          )}
+
+          {selectedDibujo && (
+            <VerDibujo dibujo={selectedDibujo} onClose={() => setSelectedDibujo(null)} />
           )}
         </>
       )}

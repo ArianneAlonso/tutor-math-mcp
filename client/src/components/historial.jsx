@@ -1,13 +1,13 @@
 import React from 'react';
 import { Trash2, History, MessageSquare, Palette } from 'lucide-react';
 
-export const Historial = ({ messages, drawings, onClearHistory, sidebarOpen }) => {
+export const Historial = ({ messages, drawings, onClearHistory, sidebarOpen, onClose }) => {
   return (
-    <div className={`fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 ${sidebarOpen ? 'ml-64' : 'ml-14'}`}>
+    <div className={`fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 ${sidebarOpen ? 'ml-64' : 'ml-14'}`} onClick={onClose}>
       
       <div className="bg-white rounded-xl w-11/12 h-5/6 max-w-5xl flex flex-col border border-slate-200 shadow-2xl">
         
-        <div className="bg-white p-5 border-b border-slate-200 rounded-t-xl">
+        <div className="bg-white p-5 border-b border-slate-200 rounded-t-xl" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-3">
             <History className="w-6 h-6 text-sky-600" />
             <h2 className="text-xl font-semibold text-slate-800">Historial</h2>

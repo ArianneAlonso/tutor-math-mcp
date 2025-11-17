@@ -1,304 +1,166 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { Chat } from './components/chat';
+import { Historial } from './components/historial';
+import { Pizarra } from './components/pizarra';
+import { Sidebar } from './components/sidebar';
+import LoginRegister from './components/loginregister';
 
-import { Toaster, toast } from "sonner";
-
-const SWATCHES = [
-  "#000000", // black
-  "#ffffff", // white
-  "#ee3333", // red
-  "#e64980", // pink
-  "#be4bdb", // purple
-  "#893200", // brown
-  "#228be6", // blue
-  "#3333ee", // dark blue
-  "#40c057", // green
-  "#00aa00", // dark green
-  "#fab005", // yellow
-  "#fd7e14", // orange
-];
-
-const App = () => {
-  const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [brushColor, setBrushColor] = useState("rgb(255, 255, 255)");
-  const [shouldReset, setShouldReset] = useState(false);
-  const [variableStorage, setVariableStorage] = useState({});
-  const [calculationResult, setCalculationResult] = useState(null);
-  const [latexPosition, setLatexPosition] = useState({ x: 10, y: 200 });
-  const [latexExpressions, setLatexExpressions] = useState([]);
+export const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showPizarra, setShowPizarra] = useState(false);
+  const [showHistorial, setShowHistorial] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [drawings, setDrawings] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [inputMessage, setInputMessage] = useState("");
 
   useEffect(() => {
-    if (latexExpressions.length > 0 && window.MathJax) {
-      setTimeout(() => {
-        window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub]);
-      }, 0);
+    const token = localStorage.getItem('user_token');
+    if (token) {
+      fetchUserData(token);
     }
-  }, [latexExpressions]);
-
-  useEffect(() => {
-    if (calculationResult) {
-      displayLatexOnCanvas(
-        calculationResult.expression,
-        calculationResult.answer
-      );
-    }
-  }, [calculationResult]);
-
-  useEffect(() => {
-    if (shouldReset) {
-      clearCanvas();
-      setLatexExpressions([]);
-      setCalculationResult(null);
-      setVariableStorage({});
-      setShouldReset(false);
-      toast.info("Dibujo borrado");
-    }
-  }, [shouldReset]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight - canvas.offsetTop;
-        ctx.lineCap = "round";
-        ctx.lineWidth = 3;
-      }
-    }
-
-    const script = document.createElement("script");
-    script.src =
-      "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML";
-    script.async = true;
-    document.head.appendChild(script);
-
-    script.onload = () => {
-      window.MathJax.Hub.Config({
-        tex2jax: {
-          inlineMath: [
-            ["$", "$"],
-            ["\\(", "\\)"],
-          ],
-        },
-      });
-    };
-
-    return () => {
-      document.head.removeChild(script);
-    };
   }, []);
 
-  const displayLatexOnCanvas = (expression, answer) => {
-    const latex = `\\(\\LARGE{${expression} = ${answer}}\\)`;
-    setLatexExpressions((prevExpressions) => [...prevExpressions, latex]);
-
-    clearCanvas();
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+  const fetchUserData = async (token) => {
+    try {
+      const response = await fetch('http://localhost:3000/users/me', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Sesión inválida o expirada');
+      const userData = await response.json();
+      setCurrentUser(userData);
+      setIsAuthenticated(true);
+      fetchConversations(token);
+    } catch (error) {
+      localStorage.removeItem('user_token');
+      setIsAuthenticated(false);
+      setCurrentUser(null);
     }
   };
 
-  const initializeDrawing = (event) => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.style.background = "black";
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.beginPath();
-        ctx.moveTo(event.nativeEvent.offsetX, event.nativeEvent.offsetY);
-        setIsDrawing(true);
-      }
+  const fetchConversations = async (token) => {
+    try {
+      const response = await fetch('http://localhost:3000/conversations', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('No se pudieron cargar las conversaciones');
+      const data = await response.json();
+      setConversations(data);
+    } catch (error) {
+      console.error(error);
     }
   };
 
-  const changeBrushColor = (color) => {
-    setBrushColor(color);
-    toast.info(`Color del pincel cambiado a: ${color}`);
+  const handleNewChat = () => {
+    setMessages([]);
+    setShowPizarra(false);
+    setCurrentConversationId(null);
   };
 
-  const draw = (event) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.strokeStyle = brushColor;
-        ctx.lineTo(event.nativeEvent.offsetX, event.nativeEvent.offsetY);
-        ctx.stroke();
-      }
-    }
+  const handleSelectConversation = async (id) => {
+    setCurrentConversationId(id);
+    setMessages([
+      { id: 1, sender: 'bot', text: `Cargando mensajes del chat ${id}...`, timestamp: new Date().toLocaleTimeString() }
+    ]);
   };
 
-  const finishDrawing = () => {
-    setIsDrawing(false);
+  const handleClearHistory = () => {
+    setMessages([]);
+    setDrawings([]);
+    setShowHistorial(false);
   };
 
-  const processDrawing = async () => {
-    const canvas = canvasRef.current;
-    const URL = "http://localhost:3000/calculate";
-    if (canvas) {
-      try {
-        const response = await fetch(URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            image: canvas.toDataURL("image/png"),
-            dict_of_vars: variableStorage,
-          }),
-        });
-
-        const data = await response.json();
-        console.log("Response", data);
-
-        data.data.forEach((item) => {
-          if (item.assign === true) {
-            setVariableStorage((prevStorage) => ({
-              ...prevStorage,
-              [item.expr]: item.result,
-            }));
-          }
-        });
-
-        const ctx = canvas.getContext("2d");
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        let minX = canvas.width,
-          minY = canvas.height,
-          maxX = 0,
-          maxY = 0;
-
-        for (let y = 0; y < canvas.height; y++) {
-          for (let x = 0; x < canvas.width; x++) {
-            const i = (y * canvas.width + x) * 4;
-            if (imageData.data[i + 3] > 0) {
-              // If pixel is not transparent
-              minX = Math.min(minX, x);
-              minY = Math.min(minY, y);
-              maxX = Math.max(maxX, x);
-              maxY = Math.max(maxY, y);
-            }
-          }
-        }
-
-        const centerX = (minX + maxX) / 2;
-        const centerY = (minY + maxY) / 2;
-
-        setLatexPosition({ x: centerX, y: centerY });
-
-        data.data.forEach((item) => {
-          setTimeout(() => {
-            setCalculationResult({
-              expression: item.expr,
-              answer: item.result,
-            });
-          }, 1000);
-        });
-        toast.success("Dibujo procesado correctamente");
-      } catch (error) {
-        console.error("Error procesando el dibujo: ", error.message);
-        toast.error("Error procesando el dibujo");
-      }
-    }
+  const handleLoginSuccess = (token) => {
+    localStorage.setItem('user_token', token);
+    fetchUserData(token);
   };
 
-  const DraggableLatex = ({ latex, index }) => {
-    const [position, setPosition] = useState(latexPosition);
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-
-    const handleMouseDown = (e) => {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    };
-
-    const handleMouseMove = (e) => {
-      if (isDragging) {
-        setPosition({
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
-        });
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    useEffect(() => {
-      if (isDragging) {
-        document.addEventListener("mousemove", handleMouseMove);
-        document.addEventListener("mouseup", handleMouseUp);
-      } else {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      }
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }, [isDragging]);
-
-    return (
-      <div
-        className="absolute p-2 text-white rounded shadow-md cursor-move"
-        style={{ left: `${position.x}px`, top: `${position.y}px` }}
-        onMouseDown={handleMouseDown}
-      >
-        <div className="latex-content">{latex}</div>
-      </div>
-    );
+  const handleLogout = () => {
+    localStorage.removeItem('user_token');
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setMessages([]);
+    setDrawings([]);
+    setConversations([]);
+    setCurrentConversationId(null);
+    setShowPizarra(false);
+    setShowHistorial(false);
+    setSidebarOpen(false);
   };
+
+  const handleSendMessage = (msg) => {
+    if (!msg.trim()) return;
+    const newMsg = { id: Date.now(), sender: "user", text: msg, timestamp: new Date().toLocaleTimeString() };
+    setMessages(prev => [...prev, newMsg]);
+    setInputMessage("");
+
+    setTimeout(() => {
+      const botResponse = { id: Date.now() + 1, sender: "bot", text: "Respuesta temporal del bot.", timestamp: new Date().toLocaleTimeString() };
+      setMessages(prev => [...prev, botResponse]);
+    }, 600);
+  };
+
+  const handleAnalyzeAndSaveDrawing = (drawingData) => {
+    const newDrawing = { id: Date.now(), data: drawingData, timestamp: new Date().toLocaleTimeString() };
+    setDrawings(prev => [...prev, newDrawing]);
+  };
+
+  const toggleHistorial = () => setShowHistorial(prev => !prev);
 
   return (
-    <div className="relative w-full h-screen">
-      <Toaster position="bottom-center" richColors />
-      <div className="grid grid-cols-3 gap-2 absolute top-0 left-0 right-0 z-10 bg-gray-800 p-2">
-        <button
-          onClick={() => setShouldReset(true)}
-          className="bg-transparent hover:bg-red-500 text-red-500 font-semibold hover:text-white py-2 px-4 border border-red-500 hover:border-transparent rounded transition-all duration-500 ease-in-out"
-        >
-          Reset
-        </button>
-        <div className="flex justify-center space-x-2">
-          {SWATCHES.map((swatch) => (
-            <button
-              key={swatch}
-              className="w-8 h-8 rounded-full border-2 border-white hover:border-transparent transition-all duration-500 ease-in-out transform hover:scale-125"
-              style={{ backgroundColor: swatch }}
-              onClick={() => changeBrushColor(swatch)}
+    <div className="w-full h-screen bg-slate-100 overflow-hidden">
+      {!isAuthenticated ? (
+        <LoginRegister onLoginSuccess={handleLoginSuccess} />
+      ) : (
+        <>
+          <Sidebar
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+            onNewChat={handleNewChat}
+            onShowPizarra={() => setShowPizarra(!showPizarra)}
+            onShowHistorial={toggleHistorial}
+            showPizarra={showPizarra}
+            conversations={conversations}
+            onSelectConversation={handleSelectConversation}
+            onLogout={handleLogout}
+            currentUser={currentUser}
+          />
+
+          <div className={`h-full transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-14'} flex`}>
+            <div className={showPizarra ? "w-1/2 border-r border-slate-200" : "w-full"}>
+              <Chat
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                inputMessage={inputMessage}
+                setInputMessage={setInputMessage}
+                sidebarOpen={sidebarOpen}
+                showPizarra={showPizarra}
+              />
+            </div>
+
+            {showPizarra && (
+              <div className="w-1/2 h-full">
+                <Pizarra onSave={handleAnalyzeAndSaveDrawing} />
+              </div>
+            )}
+          </div>
+
+          {showHistorial && (
+            <Historial
+              messages={messages}
+              drawings={drawings}
+              onClearHistory={handleClearHistory}
+              onClose={toggleHistorial}
+              sidebarOpen={sidebarOpen}
             />
-          ))}
-        </div>
-        <button
-          onClick={processDrawing}
-          className="bg-transparent hover:bg-green-500 text-green-500 font-semibold hover:text-white py-2 px-4 border border-green-500 hover:border-transparent rounded transition-all duration-500 ease-in-out"
-        >
-          Process
-        </button>
-      </div>
-      <canvas
-        ref={canvasRef}
-        className="absolute top-0 left-0 w-full h-full"
-        onMouseDown={initializeDrawing}
-        onMouseMove={draw}
-        onMouseUp={finishDrawing}
-        onMouseOut={finishDrawing}
-      />
-      {latexExpressions.map((latex, index) => (
-        <DraggableLatex key={index} latex={latex} index={index} />
-      ))}
+          )}
+        </>
+      )}
     </div>
   );
 };
-
-export default App;

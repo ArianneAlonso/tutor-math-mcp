@@ -16,6 +16,9 @@ export const App = () => {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
+  const [pizarraWidth, setPizarraWidth] = useState(50); // porcentaje inicial
+  const [isResizing, setIsResizing] = useState(false);
+
 
   useEffect(() => {
     const token = localStorage.getItem('user_token');
@@ -179,6 +182,32 @@ export const App = () => {
     setDrawings(prev => [...prev, newDrawing]);
   };
 
+  const startResize = () => {
+    setIsResizing(true);
+  };
+
+  const doResize = (e) => {
+    if (!isResizing) return;
+
+    
+    const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
+
+    setPizarraWidth(Math.min(80, Math.max(20, newWidth))); 
+  };
+
+  const stopResize = () => {
+    setIsResizing(false);
+  };
+
+  useEffect(() => {
+    window.addEventListener("mousemove", doResize);
+    window.addEventListener("mouseup", stopResize);
+    return () => {
+      window.removeEventListener("mousemove", doResize);
+      window.removeEventListener("mouseup", stopResize);
+    };
+  }, [isResizing]);
+
   const toggleHistorial = () => setShowHistorial(prev => !prev);
 
   return (
@@ -201,7 +230,11 @@ export const App = () => {
           />
 
           <div className={`h-full transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-14'} flex`}>
-            <div className={showPizarra ? "w-1/2 border-r border-slate-200" : "w-full"}>
+
+            <div
+              style={{ width: showPizarra ? `${100 - pizarraWidth}%` : "100%" }}
+              className="border-r border-slate-200"
+            >
               <Chat
                 messages={messages}
                 onSendMessage={handleSendMessage}
@@ -213,7 +246,14 @@ export const App = () => {
             </div>
 
             {showPizarra && (
-              <div className="w-1/2 h-full">
+              <div
+                onMouseDown={startResize}
+                className="w-2 cursor-ew-resize bg-slate-300 hover:bg-slate-400"
+              />
+            )}
+
+            {showPizarra && (
+              <div style={{ width: `${pizarraWidth}%` }} className="h-full">
                 <Pizarra onSave={handleAnalyzeAndSaveDrawing} />
               </div>
             )}

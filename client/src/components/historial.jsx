@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { History, MessageSquare, Palette } from 'lucide-react';
+import { History } from 'lucide-react';
 
 export const Historial = ({
-  chatsMensajes,
-  chatsDibujos,
+  messages = [],
+  drawings = [],
   sidebarOpen,
   onClose,
-  onOpenChat,
-  onOpenDibujo,
+  onClearHistory,
 }) => {
   const [tab, setTab] = useState("mensajes");
 
@@ -36,7 +35,7 @@ export const Historial = ({
             }`}
             onClick={() => setTab("mensajes")}
           >
-            Chats ({chatsMensajes.length})
+            Chats ({messages.length})
           </button>
 
           <button
@@ -47,25 +46,24 @@ export const Historial = ({
             }`}
             onClick={() => setTab("dibujos")}
           >
-            Dibujos ({chatsDibujos.length})
+            Dibujos ({drawings.length})
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {tab === "mensajes" && (
             <div className="space-y-4">
-              {chatsMensajes.length === 0 ? (
+              {messages.length === 0 ? (
                 <p className="text-slate-500">No hay chats guardados</p>
               ) : (
-                chatsMensajes.map((chat) => (
+                messages.map((m) => (
                   <div
-                    key={chat.id}
-                    className="bg-white p-4 rounded-lg border shadow-sm cursor-pointer hover:bg-slate-100"
-                    onClick={() => onOpenChat(chat)}
+                    key={m.id}
+                    className="bg-white p-4 rounded-lg border shadow-sm"
                   >
                     <div className="flex justify-between">
-                      <h3 className="font-medium">{chat.contenido.length} mensajes</h3>
-                      <span className="text-xs text-slate-400">{chat.timestamp}</span>
+                      <p className="font-medium truncate w-4/5">{m.text}</p>
+                      <span className="text-xs text-slate-400">{m.timestamp}</span>
                     </div>
                   </div>
                 ))
@@ -75,17 +73,19 @@ export const Historial = ({
 
           {tab === "dibujos" && (
             <div className="grid grid-cols-3 gap-4">
-              {chatsDibujos.length === 0 ? (
+              {drawings.length === 0 ? (
                 <p className="text-slate-500 col-span-3">No hay dibujos guardados</p>
               ) : (
-                chatsDibujos.map((dibujo) => (
+                drawings.map((d) => (
                   <div
-                    key={dibujo.id}
-                    className="bg-white p-3 border rounded-lg shadow-sm cursor-pointer hover:bg-slate-100"
-                    onClick={() => onOpenDibujo(dibujo)}
+                    key={d.id}
+                    className="bg-white p-3 border rounded-lg shadow-sm"
                   >
-                    <img src={dibujo.image} className="rounded h-40 w-full object-cover" />
-                    <p className="text-xs text-slate-400 mt-1">{dibujo.timestamp}</p>
+                    <img
+                      src={d.dataUrl}
+                      className="rounded h-40 w-full object-cover"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">{d.timestamp}</p>
                   </div>
                 ))
               )}

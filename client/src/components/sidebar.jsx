@@ -121,26 +121,6 @@ export const Sidebar = ({
               <History className="w-4 h-4" /> Historial
             </button>
 
-            <div className="mt-4">
-              <div className="px-3 py-2 text-xs text-slate-400 font-medium">Recientes</div>
-              <div className="space-y-1">
-
-                {(!chatsMensajes || chatsMensajes.length === 0) && (
-                  <p className="px-3 py-2 text-sm text-slate-400">No hay chats recientes</p>
-                )}
-
-                {chatsMensajes?.map(chat => (
-                  <button
-                    key={chat.id}
-                    onClick={() => onOpenChat(chat)}   // 🔥 carga directa al chat principal
-                    className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg truncate"
-                  >
-                    Chat del {chat.timestamp}
-                  </button>
-                ))}
-
-              </div>
-            </div>
           </nav>
 
           <div className="p-3 border-t border-slate-200 mt-auto">

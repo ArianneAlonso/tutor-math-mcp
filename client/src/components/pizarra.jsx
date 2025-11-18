@@ -64,8 +64,11 @@ export const Pizarra = ({ onSave }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const dataUrl = canvas.toDataURL("image/png");
+    console.log("CANVAS ELEMENT:", canvas);
 
+    const dataUrl = canvas.toDataURL("image/png");
+     console.log("BASE64:", dataUrl);
+     
     if (typeof onSave === "function") {
       await onSave(dataUrl);
       toast.success("Dibujo enviado correctamente");

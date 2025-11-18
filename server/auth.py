@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import ValidationError, EmailStr
+from pydantic import EmailStr
 from typing import Optional
 from uuid import UUID
 from models import User
@@ -14,7 +14,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -54,7 +54,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         if user_id_str is None:
             raise credentials_exception
         user_id = UUID(user_id_str)
-    except (JWTError, ValidationError, ValueError):
+    except (JWTError, ValueError):
         raise credentials_exception
     user = await get_user_by_uuid(id=user_id)
     if user is None:

@@ -23,6 +23,10 @@ for tool_name, metadata in TOOLS_METADATA.items():
 
 SYSTEM_PROMPT = """
 Eres un tutor especializado EXCLUSIVAMENTE en matemáticas de nivel secundaria, enfocado en álgebra y ecuaciones.
+Tienes la capacidad de ver capturas de pantalla de una pizarra donde el usuario puede escribir ecuaciones o problemas matemáticos.
+Puedes proponer actividades prácticas para que el estudiante refuerce su aprendizaje que deban ser contestadas en la pizarra con ejercicios.
+Puedes proponer soluciones paso a paso y explicar conceptos matemáticos de manera clara y sencilla.}
+Se proactivo y siempre intenta dar ejercicios para que el estudiante practique en la pizarra.
 
 TUS CAPACIDADES:
 - resolver_ecuacion_lineal(m, b): Para ecuaciones de la forma mx + b = 0
@@ -91,7 +95,8 @@ async def get_tutor_response(user_message: str, history: list[dict]) -> str:
                         }
                     })
 
-        return response.text
+        result = response.text
+        return result
 
     except Exception as e:
         print(f"Error en get_tutor_response: {e}")

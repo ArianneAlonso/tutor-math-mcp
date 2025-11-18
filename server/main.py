@@ -82,8 +82,9 @@ async def read_users_me(current_user: User = Depends(auth.get_current_user)):
 async def get_user_conversations(current_user: User = Depends(auth.get_current_user)):
     if not current_user.conversations:
         return []
-    await current_user.fetch_links(User.conversations)
-    return current_user.conversations
+    conversation_ids = [conv.ref.id for conv in current_user.conversations]
+    conversations = await Conversation.find({"_id": {"$in": conversation_ids}}).to_list()
+    return conversations
 
 @app.post("/conversations/new")
 async def create_conversation(current_user: User = Depends(auth.get_current_user)):
@@ -117,18 +118,39 @@ async def calculate(
     try:
         result = analyze_image(req.image, req.dict_of_vars)
         
-        new_conv_title = f"Análisis Pizarra {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        new_conv = Conversation(title=new_conv_title)
-        await new_conv.insert()
+        if req.conversation_id:
+            conversation = await Conversation.get(req.conversation_id)
+            if not conversation:
+                raise HTTPException(status_code=404, detail="Conversación no encontrada")
+        else:
+            conversation = Conversation(title=f"Sesión {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+            await conversation.insert()
+            current_user.conversations.append(conversation)
+            await current_user.save()
         
-        current_user.conversations.append(new_conv)
-        await current_user.save() 
+        conversation.messages.append(ChatMessage(
+            sender="user",
+            text="[Analicé contenido de la pizarra]",
+            image_base64=req.image,
+            analysis_result=result,
+            message_type="whiteboard"
+        ))
         
-        return {
-            "status": "success", 
-            "data": result, 
-            "conversation_id": str(new_conv.id)
+        results_text = ", ".join([f"{r.expr} = {r.result}" for r in result if hasattr(r, 'expr')])
+        conversation.messages.append(ChatMessage(
+            sender="ai",
+            text=f"Detecté en la pizarra: {results_text}",
+            message_type="system"
+        ))
+        
+        await conversation.save()
+
+        response_data = {
+            "status": "success",
+            "data": result,
+            "conversation_id": str(conversation.id)
         }
+        return response_data
     except Exception as e:
         print(f"Error en /calculate: {e}")
         raise HTTPException(status_code=500, detail=str(e))

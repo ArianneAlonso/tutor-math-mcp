@@ -6,6 +6,9 @@ from uuid import UUID, uuid4
 class ChatMessage(BaseModel):
     sender: str
     text: str
+    image_base64: Optional[str] = None
+    analysis_result: Optional[List[dict]] = None
+    message_type: str = "text"
 
 class Conversation(Document):
     title: str
@@ -54,6 +57,7 @@ class Token(BaseModel):
 class CalculateRequest(BaseModel):
     image: str
     dict_of_vars: dict = {}
+    conversation_id: Optional[str] = None
 
 class ChatRequest(BaseModel):
     message: str
